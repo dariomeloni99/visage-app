@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VISAGE — AI Facial Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Montserrat:wght@200;300;400;500&display=swap" rel="stylesheet">
+<!-- Stripe.js loaded dynamically after we get the publishable key -->
+<style>
+  :root {
+    --cream: #F5F0E8; --charcoal: #1A1A18; --gold: #C9A84C;
+    --gold-light: #E8D5A3; --muted: #7A7468; --border: rgba(201,168,76,0.25);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { background:var(--charcoal); color:var(--cream); font-family:'Montserrat',sans-serif; font-weight:300; overflow-x:hidden; }
+  body::before { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E"); pointer-events:none; z-index:0; opacity:0.4; }
+
+  /* NAV */
+  nav { position:fixed; top:0; left:0; right:0; z-index:100; display:flex; justify-content:space-between; align-items:center; padding:28px 60px; background:linear-gradient(to bottom,rgba(26,26,24,.95) 0%,transparent 100%); backdrop-filter:blur(2px); }
+  .logo { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:300; letter-spacing:.4em; color:var(--gold-light); text-decoration:none; }
+  .logo span { color:var(--gold); }
+  nav ul { display:flex; gap:40px; list-style:none; }
+  nav a { color:var(--cream); text-decoration:none; font-size:10px; letter-spacing:.25em; text-transform:uppercase; opacity:.7; transition:opacity .3s,color .3s; }
+  nav a:hover { opacity:1; color:var(--gold-light); }
+
+  /* HERO */
+  .hero { min-height:100vh; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; padding:120px 60px 80px; }
+  .hero-bg { position:absolute; inset:0; background:radial-gradient(ellipse 60% 80% at 80% 50%,rgba(201,168,76,.06) 0%,transparent 60%),radial-gradient(ellipse 40% 60% at 20% 60%,rgba(201,168,76,.04) 0%,transparent 50%),linear-gradient(160deg,#1A1A18 0%,#0E0E0C 100%); }
+  .hero-line { position:absolute; right:15%; top:10%; bottom:10%; width:1px; background:linear-gradient(to bottom,transparent,var(--gold) 30%,var(--gold) 70%,transparent); opacity:.2; }
+  .hero-content { position:relative; z-index:1; max-width:700px; }
+  .eyebrow { font-size:10px; letter-spacing:.35em; text-transform:uppercase; color:var(--gold); margin-bottom:24px; display:flex; align-items:center; gap:16px; }
+  .eyebrow::after { content:''; display:inline-block; width:40px; height:1px; background:var(--gold); opacity:.5; }
+  h1 { font-family:'Cormorant Garamond',serif; font-size:clamp(56px,8vw,96px); font-weight:300; line-height:.95; letter-spacing:-.02em; margin-bottom:32px; }
+  h1 em { font-style:italic; color:var(--gold-light); display:block; }
+  .hero-desc { font-size:13px; line-height:1.9; color:rgba(245,240,232,.6); max-width:420px; margin-bottom:48px; letter-spacing:.03em; }
+  .btn-primary { display:inline-flex; align-items:center; gap:16px; background:var(--gold); color:var(--charcoal); padding:16px 36px; font-family:'Montserrat',sans-serif; font-size:10px; font-weight:500; letter-spacing:.3em; text-transform:uppercase; text-decoration:none; cursor:pointer; border:none; transition:all .4s; position:relative; overflow:hidden; }
+  .btn-primary::before { content:''; position:absolute; inset:0; background:rgba(255,255,255,.15); transform:translateX(-100%); transition:transform .4s; }
+  .btn-primary:hover::before { transform:translateX(0); }
+  .btn-ghost { display:inline-flex; align-items:center; gap:12px; border:1px solid var(--border); color:var(--cream); padding:15px 32px; font-family:'Montserrat',sans-serif; font-size:10px; font-weight:400; letter-spacing:.3em; text-transform:uppercase; text-decoration:none; cursor:pointer; background:transparent; transition:all .3s; margin-left:20px; }
+  .btn-ghost:hover { border-color:var(--gold); color:var(--gold-light); }
+  .hero-stats { display:flex; gap:60px; margin-top:80px; padding-top:40px; border-top:1px solid rgba(201,168,76,.12); }
+  .stat-num { font-family:'Cormorant Garamond',serif; font-size:36px; font-weight:300; color:var(--gold-light); line-height:1; }
+  .stat-label { font-size:9px; letter-spacing:.25em; text-transform:uppercase; color:var(--muted); margin-top:8px; }
+
+  /* SECTIONS */
+  section { position:relative; z-index:1; }
+  .section-label { font-size:9px; letter-spacing:.4em; text-transform:uppercase; color:var(--gold); margin-bottom:20px; }
+  h2 { font-family:'Cormorant Garamond',serif; font-size:clamp(36px,5vw,64px); font-weight:300; line-height:1.1; letter-spacing:-.01em; }
+  h2 em { font-style:italic; color:var(--gold-light); }
+
+  /* HOW */
+  .how { padding:120px 60px; background:linear-gradient(to bottom,var(--charcoal),#121210); }
+  .how-inner { max-width:1200px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:100px; align-items:center; }
+  .step { display:flex; gap:32px; padding:36px 0; border-bottom:1px solid rgba(201,168,76,.1); transition:all .3s; }
+  .step:hover .step-icon { background:rgba(201,168,76,.15); border-color:var(--gold); }
+  .step-num { font-family:'Cormorant Garamond',serif; font-size:11px; color:var(--gold); letter-spacing:.2em; min-width:32px; padding-top:4px; }
+  .step-icon { width:48px; height:48px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .3s; }
+  .step-icon svg { width:20px; height:20px; stroke:var(--gold); fill:none; stroke-width:1.5; }
+  .step h3 { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:400; letter-spacing:.03em; margin-bottom:8px; }
+  .step p { font-size:12px; line-height:1.8; color:rgba(245,240,232,.5); letter-spacing:.03em; }
+  .analysis-card { background:rgba(245,240,232,.03); border:1px solid var(--border); padding:40px; position:relative; }
+  .analysis-card::before { content:''; position:absolute; top:-1px; left:-1px; right:-1px; height:2px; background:linear-gradient(90deg,transparent,var(--gold),transparent); }
+  .card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:32px; }
+  .card-title { font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:400; letter-spacing:.1em; }
+  .card-badge { font-size:8px; letter-spacing:.2em; text-transform:uppercase; background:rgba(201,168,76,.15); color:var(--gold-light); padding:6px 12px; border:1px solid var(--border); }
+  .metric-row { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid rgba(245,240,232,.05); }
+  .metric-name { font-size:11px; letter-spacing:.12em; color:rgba(245,240,232,.5); }
+  .metric-bar-wrap { flex:1; margin:0 20px; height:2px; background:rgba(245,240,232,.07); position:relative; overflow:hidden; }
+  .metric-bar { position:absolute; left:0; top:0; bottom:0; background:linear-gradient(90deg,var(--gold),var(--gold-light)); animation:barGrow 1.5s ease forwards; }
+  @keyframes barGrow { from{width:0} }
+  .metric-val { font-family:'Cormorant Garamond',serif; font-size:16px; color:var(--gold-light); min-width:40px; text-align:right; }
+
+  /* ANALYZER */
+  .analyzer { padding:120px 60px; background:#0E0E0C; position:relative; }
+  .analyzer::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse 50% 60% at 50% 30%,rgba(201,168,76,.04) 0%,transparent 70%); }
+  .analyzer-inner { max-width:900px; margin:0 auto; position:relative; z-index:1; }
+  .analyzer-header { text-align:center; margin-bottom:64px; }
+  .analyzer-header p { font-size:13px; color:rgba(245,240,232,.5); letter-spacing:.05em; margin-top:16px; }
+  .upload-zone { border:1px solid var(--border); padding:64px; text-align:center; cursor:pointer; transition:all .4s; position:relative; background:rgba(201,168,76,.02); }
+  .upload-zone:hover,.upload-zone.drag-over { border-color:var(--gold); background:rgba(201,168,76,.05); }
+  .upload-zone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+  .upload-icon { width:56px; height:56px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; margin:0 auto 24px; }
+  .upload-icon svg { width:24px; height:24px; stroke:var(--gold); fill:none; stroke-width:1.5; }
+  .upload-title { font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:300; letter-spacing:.05em; margin-bottom:12px; }
+  .upload-sub { font-size:11px; color:var(--muted); letter-spacing:.15em; text-transform:uppercase; }
+  #preview-container { display:none; margin-top:40px; }
+  #preview-img { max-height:340px; max-width:100%; display:block; margin:0 auto; filter:grayscale(15%) contrast(1.05); border:1px solid var(--border); }
+  .analyze-btn { display:block; width:100%; margin-top:32px; background:var(--gold); color:var(--charcoal); padding:18px; font-family:'Montserrat',sans-serif; font-size:10px; font-weight:500; letter-spacing:.35em; text-transform:uppercase; cursor:pointer; border:none; transition:all .3s; }
+  .analyze-btn:hover { background:var(--gold-light); }
+  .analyze-btn:disabled { opacity:.5; cursor:not-allowed; }
+  .error-msg { background:rgba(180,60,60,.1); border:1px solid rgba(180,60,60,.3); padding:20px 28px; font-size:12px; color:rgba(245,240,232,.7); letter-spacing:.04em; margin-top:24px; display:none; }
+
+  /* LOADING */
+  .loading { display:none; text-align:center; padding:64px; margin-top:40px; }
+  .loading.active { display:block; }
+  .loading-ring { width:64px; height:64px; border:1px solid rgba(201,168,76,.2); border-top-color:var(--gold); border-radius:50%; animation:spin 1.2s linear infinite; margin:0 auto 24px; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .loading-text { font-size:10px; letter-spacing:.3em; text-transform:uppercase; color:var(--muted); }
+
+  /* FREE RESULT */
+  #free-result { display:none; margin-top:56px; }
+  .score-reveal { text-align:center; padding:56px 40px; border:1px solid var(--border); background:rgba(201,168,76,.03); position:relative; }
+  .score-reveal::before { content:''; position:absolute; top:-1px; left:-1px; right:-1px; height:2px; background:linear-gradient(90deg,transparent,var(--gold),transparent); }
+  .score-eyebrow { font-size:9px; letter-spacing:.4em; text-transform:uppercase; color:var(--gold); margin-bottom:16px; }
+  .score-number { font-family:'Cormorant Garamond',serif; font-size:clamp(80px,15vw,140px); font-weight:300; color:var(--gold-light); line-height:1; }
+  .score-denom { font-size:24px; color:var(--muted); }
+  .score-sub { font-size:12px; letter-spacing:.15em; color:rgba(245,240,232,.4); margin-top:12px; text-transform:uppercase; }
+
+  /* PAYWALL */
+  .paywall { margin-top:2px; border:1px solid var(--border); background:rgba(245,240,232,.02); padding:48px; position:relative; overflow:hidden; }
+  .paywall::before { content:''; position:absolute; top:-1px; left:-1px; right:-1px; height:2px; background:linear-gradient(90deg,transparent,var(--gold),transparent); }
+  .paywall-inner { display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center; }
+  .paywall-features { list-style:none; margin:24px 0 0; }
+  .paywall-features li { display:flex; align-items:flex-start; gap:14px; padding:12px 0; border-bottom:1px solid rgba(245,240,232,.05); font-size:12px; line-height:1.6; color:rgba(245,240,232,.65); letter-spacing:.02em; }
+  .paywall-features li::before { content:''; width:5px; height:5px; border-radius:50%; background:var(--gold); flex-shrink:0; margin-top:6px; }
+  .paywall-price { font-family:'Cormorant Garamond',serif; font-size:64px; font-weight:300; color:var(--gold-light); line-height:1; margin-bottom:8px; }
+  .paywall-price span { font-size:20px; color:var(--muted); }
+  .paywall-note { font-size:10px; letter-spacing:.15em; color:var(--muted); margin-bottom:28px; }
+  .pay-btn { display:block; width:100%; background:var(--gold); color:var(--charcoal); padding:18px; font-family:'Montserrat',sans-serif; font-size:10px; font-weight:500; letter-spacing:.3em; text-transform:uppercase; cursor:pointer; border:none; transition:all .3s; }
+  .pay-btn:hover { background:var(--gold-light); }
+  .pay-btn:disabled { opacity:.5; cursor:not-allowed; }
+  .stripe-badge { display:flex; align-items:center; gap:8px; margin-top:16px; font-size:9px; letter-spacing:.15em; color:var(--muted); justify-content:center; }
+  .stripe-badge svg { width:14px; height:14px; fill:var(--muted); }
+
+  /* PAYMENT MODAL */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(10,10,8,.85); z-index:200; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+  .modal-overlay.active { display:flex; }
+  .modal { background:#141412; border:1px solid var(--border); padding:48px; width:100%; max-width:480px; position:relative; animation:fadeUp .4s ease; }
+  .modal::before { content:''; position:absolute; top:-1px; left:-1px; right:-1px; height:2px; background:linear-gradient(90deg,transparent,var(--gold),transparent); }
+  .modal-title { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:300; letter-spacing:.05em; margin-bottom:8px; }
+  .modal-sub { font-size:11px; color:var(--muted); letter-spacing:.1em; margin-bottom:32px; }
+  .modal-close { position:absolute; top:20px; right:20px; background:none; border:none; color:var(--muted); cursor:pointer; font-size:20px; line-height:1; transition:color .3s; }
+  .modal-close:hover { color:var(--cream); }
+  #payment-element { margin-bottom:24px; }
+  #payment-message { font-size:12px; color:#cf6679; margin-bottom:16px; display:none; letter-spacing:.03em; }
+  .submit-btn { display:block; width:100%; background:var(--gold); color:var(--charcoal); padding:16px; font-family:'Montserrat',sans-serif; font-size:10px; font-weight:500; letter-spacing:.3em; text-transform:uppercase; cursor:pointer; border:none; transition:all .3s; }
+  .submit-btn:hover { background:var(--gold-light); }
+  .submit-btn:disabled { opacity:.5; cursor:not-allowed; }
+  .secure-note { font-size:9px; letter-spacing:.15em; color:var(--muted); text-align:center; margin-top:14px; }
+
+  /* FULL RESULTS */
+  #results { display:none; margin-top:64px; }
+  .results-header { text-align:center; margin-bottom:48px; padding-bottom:32px; border-bottom:1px solid var(--border); }
+  .results-header h3 { font-family:'Cormorant Garamond',serif; font-size:36px; font-weight:300; letter-spacing:.05em; }
+  .results-grid { display:grid; grid-template-columns:1fr 1fr; gap:2px; margin-bottom:2px; }
+  .result-block { background:rgba(245,240,232,.025); border:1px solid rgba(201,168,76,.1); padding:32px; animation:fadeUp .6s ease forwards; opacity:0; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  .result-block:nth-child(2){animation-delay:.1s} .result-block:nth-child(3){animation-delay:.2s} .result-block:nth-child(4){animation-delay:.3s}
+  .result-block-label { font-size:9px; letter-spacing:.3em; text-transform:uppercase; color:var(--gold); margin-bottom:12px; }
+  .result-block-content { font-size:13px; line-height:1.85; color:rgba(245,240,232,.7); letter-spacing:.02em; }
+  .result-full { background:rgba(245,240,232,.025); border:1px solid rgba(201,168,76,.1); padding:40px; margin-top:2px; animation:fadeUp .6s ease .4s forwards; opacity:0; }
+  .tips-list { list-style:none; margin-top:20px; }
+  .tips-list li { display:flex; gap:16px; padding:16px 0; border-bottom:1px solid rgba(245,240,232,.05); font-size:13px; line-height:1.7; color:rgba(245,240,232,.7); letter-spacing:.02em; animation:fadeUp .5s ease forwards; opacity:0; }
+  .tips-list li::before { content:attr(data-num); font-family:'Cormorant Garamond',serif; font-size:18px; color:var(--gold); min-width:24px; flex-shrink:0; line-height:1.4; }
+
+  /* HAIRSTYLE */
+  .hair-section { margin-top:2px; animation:fadeUp .6s ease .5s forwards; opacity:0; }
+  .hair-face-shape { background:rgba(201,168,76,.06); border:1px solid var(--border); padding:28px 32px; display:flex; align-items:center; gap:24px; margin-bottom:2px; }
+  .face-shape-badge { font-family:'Cormorant Garamond',serif; font-size:32px; color:var(--gold-light); font-style:italic; white-space:nowrap; }
+  .face-shape-explain { font-size:12px; line-height:1.8; color:rgba(245,240,232,.6); letter-spacing:.02em; }
+  .hair-grid { display:grid; grid-template-columns:1fr 1fr; gap:2px; }
+  .hair-col-label { font-size:9px; letter-spacing:.3em; text-transform:uppercase; padding:16px 24px 10px; }
+  .hair-col-label.good { color:var(--gold); }
+  .hair-col-label.bad { color:#B87070; }
+  .hair-card { background:rgba(245,240,232,.025); border:1px solid rgba(201,168,76,.08); padding:20px 24px; margin-bottom:2px; display:flex; gap:16px; align-items:flex-start; transition:border-color .3s; }
+  .hair-card:hover { border-color:rgba(201,168,76,.25); }
+  .hair-card.avoid-card { border-color:rgba(184,112,112,.15); }
+  .hair-card.avoid-card:hover { border-color:rgba(184,112,112,.35); }
+  .hair-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; margin-top:6px; }
+  .hair-dot.good { background:var(--gold); }
+  .hair-dot.bad { background:#B87070; }
+  .hair-name { font-family:'Cormorant Garamond',serif; font-size:16px; font-weight:400; letter-spacing:.05em; margin-bottom:4px; }
+  .hair-why { font-size:11px; line-height:1.7; color:rgba(245,240,232,.5); letter-spacing:.02em; }
+
+  /* IMPROVEMENTS */
+  .improve-section { margin-top:2px; animation:fadeUp .6s ease .6s forwards; opacity:0; }
+  .improve-grid { display:grid; grid-template-columns:1fr 1fr; gap:2px; margin-top:2px; }
+  .improve-card { background:rgba(245,240,232,.025); border:1px solid rgba(201,168,76,.08); padding:28px 32px; transition:all .3s; }
+  .improve-card:hover { background:rgba(201,168,76,.04); border-color:rgba(201,168,76,.2); }
+  .improve-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+  .improve-category { font-size:8px; letter-spacing:.3em; text-transform:uppercase; color:var(--gold); }
+  .impact-badge { font-size:8px; letter-spacing:.15em; text-transform:uppercase; padding:4px 10px; border:1px solid; }
+  .impact-high { color:#8FBF8F; border-color:rgba(143,191,143,.3); background:rgba(143,191,143,.06); }
+  .impact-medium { color:var(--gold-light); border-color:rgba(201,168,76,.3); background:rgba(201,168,76,.06); }
+  .impact-low { color:var(--muted); border-color:rgba(122,116,104,.3); background:rgba(122,116,104,.06); }
+  .improve-title { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:400; letter-spacing:.05em; margin-bottom:10px; }
+  .improve-desc { font-size:12px; line-height:1.8; color:rgba(245,240,232,.55); letter-spacing:.02em; }
+
+  /* SCIENCE */
+  .science { padding:120px 60px; background:linear-gradient(to bottom,#0E0E0C,var(--charcoal)); }
+  .science-inner { max-width:1200px; margin:0 auto; }
+  .science-header { display:grid; grid-template-columns:1fr 1fr; gap:80px; align-items:end; margin-bottom:80px; }
+  .science-header p { font-size:13px; line-height:1.9; color:rgba(245,240,232,.5); letter-spacing:.03em; }
+  .pillars { display:grid; grid-template-columns:repeat(4,1fr); gap:2px; }
+  .pillar { background:rgba(245,240,232,.025); border:1px solid rgba(201,168,76,.1); padding:40px 28px; transition:all .4s; cursor:default; }
+  .pillar:hover { background:rgba(201,168,76,.06); border-color:rgba(201,168,76,.3); transform:translateY(-4px); }
+  .pillar-icon { width:44px; height:44px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; margin-bottom:24px; }
+  .pillar-icon svg { width:20px; height:20px; stroke:var(--gold); fill:none; stroke-width:1.5; }
+  .pillar h3 { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:400; margin-bottom:12px; letter-spacing:.05em; }
+  .pillar p { font-size:11px; line-height:1.8; color:rgba(245,240,232,.45); letter-spacing:.04em; }
+
+  /* TESTIMONIALS */
+  .testimonials { padding:120px 60px; background:#0A0A08; }
+  .testimonials-inner { max-width:1200px; margin:0 auto; }
+  .testimonials-header { text-align:center; margin-bottom:64px; }
+  .testi-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:2px; }
+  .testi { background:rgba(245,240,232,.025); border:1px solid rgba(201,168,76,.1); padding:40px; position:relative; }
+  .testi::before { content:'"'; font-family:'Cormorant Garamond',serif; font-size:80px; color:var(--gold); opacity:.2; position:absolute; top:20px; left:32px; line-height:1; }
+  .testi-text { font-family:'Cormorant Garamond',serif; font-size:17px; font-style:italic; line-height:1.7; color:rgba(245,240,232,.8); margin-bottom:28px; position:relative; z-index:1; }
+  .testi-name { font-size:10px; letter-spacing:.25em; text-transform:uppercase; color:var(--gold); }
+  .testi-role { font-size:10px; color:var(--muted); letter-spacing:.15em; margin-top:4px; }
+
+  footer { padding:60px; border-top:1px solid rgba(201,168,76,.1); display:flex; justify-content:space-between; align-items:center; }
+  .footer-copy { font-size:10px; letter-spacing:.2em; color:var(--muted); }
+  .footer-links { display:flex; gap:32px; }
+  .footer-links a { font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); text-decoration:none; transition:color .3s; }
+  .footer-links a:hover { color:var(--gold-light); }
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-track { background:var(--charcoal); }
+  ::-webkit-scrollbar-thumb { background:var(--gold); }
+
+  @media(max-width:900px){
+    nav{padding:24px} nav ul{display:none}
+    .hero,.how,.analyzer,.science,.testimonials{padding-left:24px;padding-right:24px}
+    .how-inner,.results-grid,.science-header,.hair-grid,.improve-grid,.paywall-inner{grid-template-columns:1fr;gap:32px}
+    .pillars,.testi-grid{grid-template-columns:1fr 1fr}
+    .hero-stats{flex-wrap:wrap;gap:32px}
+    footer{flex-direction:column;gap:24px;padding:40px 24px}
+    .modal{padding:32px;margin:16px}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="logo">V<span>I</span>SAGE</a>
+  <ul>
+    <li><a href="#how">Process</a></li>
+    <li><a href="#analysis">Analysis</a></li>
+    <li><a href="#science">Science</a></li>
+  </ul>
+  <a href="#analysis" class="btn-primary" style="padding:12px 24px;font-size:9px;">
+    Begin Analysis
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+  </a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div><div class="hero-line"></div>
+  <div class="hero-content">
+    <div class="eyebrow">AI Facial Intelligence</div>
+    <h1>Understand<br><em>Your Face.</em><br>Transform It.</h1>
+    <p class="hero-desc">An elite AI system delivers a precise, science-backed analysis of your facial structure — with personalised recommendations grounded in objective beauty research.</p>
+    <div>
+      <a href="#analysis" class="btn-primary">
+        Upload Your Photo
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+      <a href="#how" class="btn-ghost">How It Works</a>
+    </div>
+    <div class="hero-stats">
+      <div><div class="stat-num">160+</div><div class="stat-label">Facial Metrics</div></div>
+      <div><div class="stat-num">2,400</div><div class="stat-label">Academic Sources</div></div>
+      <div><div class="stat-num">98%</div><div class="stat-label">Precision Score</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div class="how-inner">
+    <div>
+      <div class="section-label">The Method</div>
+      <h2>Precision At<br><em>Every Layer</em></h2>
+      <div style="margin-top:48px">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-icon"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+          <div><h3>Upload Your Portrait</h3><p>A clear, frontal image enables our AI to map 160+ anatomical landmarks with precision.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></div>
+          <div><h3>Receive Your Free Score</h3><p>Your overall aesthetic score is revealed instantly — completely free, no payment required.</p></div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div><h3>Unlock Your Full Report</h3><p>For €7.99 receive your complete analysis: scores, hairstyle guide, and natural improvement protocol.</p></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="analysis-card">
+        <div class="card-header"><div class="card-title">Sample Analysis</div><div class="card-badge">Preview</div></div>
+        <div class="metric-row"><span class="metric-name">Facial Symmetry</span><div class="metric-bar-wrap"><div class="metric-bar" style="width:87%"></div></div><span class="metric-val">87</span></div>
+        <div class="metric-row"><span class="metric-name">Jaw Definition</span><div class="metric-bar-wrap"><div class="metric-bar" style="width:72%"></div></div><span class="metric-val">72</span></div>
+        <div class="metric-row"><span class="metric-name">Eye Spacing Ratio</span><div class="metric-bar-wrap"><div class="metric-bar" style="width:91%"></div></div><span class="metric-val">91</span></div>
+        <div class="metric-row"><span class="metric-name">Canthal Tilt</span><div class="metric-bar-wrap"><div class="metric-bar" style="width:64%"></div></div><span class="metric-val">64</span></div>
+        <div class="metric-row"><span class="metric-name">Skin Luminosity</span><div class="metric-bar-wrap"><div class="metric-bar" style="width:83%"></div></div><span class="metric-val">83</span></div>
+        <div style="margin-top:28px;padding-top:24px;border-top:1px solid rgba(201,168,76,.1);display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)">Overall Score</span>
+          <span style="font-family:'Cormorant Garamond',serif;font-size:40px;color:var(--gold-light)">79<span style="font-size:16px;color:var(--muted)">/100</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ANALYZER -->
+<section class="analyzer" id="analysis">
+  <div class="analyzer-inner">
+    <div class="analyzer-header">
+      <div class="section-label">Begin Your Analysis</div>
+      <h2>Upload Your<br><em>Portrait</em></h2>
+      <p>Your score is free. Full report unlocked for €7.99. Images are never stored.</p>
+    </div>
+
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" id="file-input" accept="image/*">
+      <div class="upload-icon"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+      <div class="upload-title">Place Your Portrait Here</div>
+      <div class="upload-sub">JPG, PNG, WEBP — Front-facing recommended</div>
+    </div>
+
+    <div id="preview-container">
+      <img id="preview-img" src="" alt="Portrait">
+      <div class="error-msg" id="error-msg"></div>
+      <button class="analyze-btn" id="analyze-btn">Analyse My Face — Free</button>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="loading-ring"></div>
+      <div class="loading-text" id="loading-text">Mapping facial landmarks...</div>
+    </div>
+
+    <!-- FREE: score only -->
+    <div id="free-result">
+      <div class="score-reveal">
+        <div class="score-eyebrow">Your Aesthetic Score</div>
+        <div class="score-number" id="score-display">—<span class="score-denom">/100</span></div>
+        <div class="score-sub">Analysis complete — full report below</div>
+      </div>
+
+      <div class="paywall">
+        <div class="paywall-inner">
+          <div>
+            <div class="section-label">Full Intelligence Report</div>
+            <h2 style="font-size:clamp(28px,3vw,42px)">Unlock Your<br><em>Complete Analysis</em></h2>
+            <ul class="paywall-features">
+              <li>Detailed scores: Symmetry, Proportions, Feature Harmony & Skin Quality</li>
+              <li>5 personalised science-backed enhancement tips</li>
+              <li>Hairstyle Intelligence — best & worst styles for your face shape</li>
+              <li>5 Natural Score Improvements ranked by impact</li>
+              <li>Your key strengths & what makes your look distinctive</li>
+            </ul>
+          </div>
+          <div style="text-align:center">
+            <div class="paywall-price">€7<span>.99</span></div>
+            <div class="paywall-note">One-time payment — instant access</div>
+            <button class="pay-btn" id="pay-btn">
+              Unlock Full Report
+              <span style="margin-left:12px">→</span>
+            </button>
+            <div class="stripe-badge">
+              <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+              Secured by Stripe
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FULL PAID RESULTS -->
+    <div id="results">
+      <div class="results-header">
+        <div class="section-label" style="display:flex;justify-content:center">Full Report Unlocked</div>
+        <h3>Your Facial Intelligence Report</h3>
+      </div>
+      <div class="results-grid" id="results-grid"></div>
+      <div class="result-full" id="results-tips"></div>
+    </div>
+  </div>
+</section>
+
+<!-- SCIENCE -->
+<section class="science" id="science">
+  <div class="science-inner">
+    <div class="science-header">
+      <div><div class="section-label">The Science</div><h2>Built On<br><em>Research</em></h2></div>
+      <p>Every metric is grounded in published peer-reviewed science — evolutionary biology, perceptual psychology, and clinical aesthetic medicine — to deliver recommendations that genuinely move the needle.</p>
+    </div>
+    <div class="pillars">
+      <div class="pillar"><div class="pillar-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg></div><h3>Symmetry Science</h3><p>Bilateral symmetry signals genetic health. We measure 40+ paired landmarks to quantify your symmetry profile.</p></div>
+      <div class="pillar"><div class="pillar-icon"><svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><h3>Golden Ratios</h3><p>The phi ratio (1.618) appears consistently across attractiveness research. We map it across your entire face.</p></div>
+      <div class="pillar"><div class="pillar-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><h3>Sexual Dimorphism</h3><p>Certain features signal biological fitness differently by gender. Our model is calibrated per phenotype.</p></div>
+      <div class="pillar"><div class="pillar-icon"><svg viewBox="0 0 24 24"><path d="M2 12h20M12 2v20"/><circle cx="12" cy="12" r="3"/></svg></div><h3>Neoteny Markers</h3><p>Youthful facial features consistently rate higher in attractiveness studies worldwide.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials">
+  <div class="testimonials-inner">
+    <div class="testimonials-header"><div class="section-label">Outcomes</div><h2>What Our Members<br><em>Experience</em></h2></div>
+    <div class="testi-grid">
+      <div class="testi"><p class="testi-text">The precision was unlike anything I had encountered. It identified asymmetries I never noticed and gave me a clear, prioritised roadmap that actually worked.</p><div class="testi-name">Alexandra M.</div><div class="testi-role">Creative Director, London</div></div>
+      <div class="testi"><p class="testi-text">I expected a generic quiz. What I received was a clinical-level assessment with citation-backed reasoning. My confidence transformation has been remarkable.</p><div class="testi-name">Marcus T.</div><div class="testi-role">Finance Professional, New York</div></div>
+      <div class="testi"><p class="testi-text">The hairstyle recommendations alone were worth it. My stylist was impressed — said I finally knew exactly what I was asking for.</p><div class="testi-name">Isabelle R.</div><div class="testi-role">Founder, Paris</div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-copy">© 2025 VISAGE. All rights reserved.</div>
+  <div class="footer-links"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Science</a><a href="#">Contact</a></div>
+</footer>
+
+<!-- STRIPE PAYMENT MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" id="modal-close">✕</button>
+    <div class="modal-title">Complete Your Purchase</div>
+    <div class="modal-sub">Full Facial Intelligence Report — €7.99 one-time</div>
+    <div id="payment-message"></div>
+    <div id="payment-element"></div>
+    <button class="submit-btn" id="submit-btn">Pay €7.99 & Unlock Report</button>
+    <div class="secure-note">🔒 Payments processed securely by Stripe. We never store card details.</div>
+  </div>
+</div>
+
+<script>
+  // ─── State ──────────────────────────────────────────────────────────────────
+  let selectedFile = null;
+  let paymentIntentId = null;
+  let stripeInstance = null;
+  let stripeElements = null;
+
+  // ─── DOM refs ────────────────────────────────────────────────────────────────
+  const fileInput       = document.getElementById('file-input');
+  const uploadZone      = document.getElementById('upload-zone');
+  const previewContainer= document.getElementById('preview-container');
+  const previewImg      = document.getElementById('preview-img');
+  const analyzeBtn      = document.getElementById('analyze-btn');
+  const loading         = document.getElementById('loading');
+  const loadingText     = document.getElementById('loading-text');
+  const errorMsg        = document.getElementById('error-msg');
+  const freeResult      = document.getElementById('free-result');
+  const scoreDisplay    = document.getElementById('score-display');
+  const payBtn          = document.getElementById('pay-btn');
+  const results         = document.getElementById('results');
+  const resultsGrid     = document.getElementById('results-grid');
+  const resultsTips     = document.getElementById('results-tips');
+  const modalOverlay    = document.getElementById('modal-overlay');
+  const modalClose      = document.getElementById('modal-close');
+  const submitBtn       = document.getElementById('submit-btn');
+  const paymentMessage  = document.getElementById('payment-message');
+
+  // ─── Upload ──────────────────────────────────────────────────────────────────
+  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault(); uploadZone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith('image/')) handleFile(f);
+  });
+  fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+  function handleFile(file) {
+    selectedFile = file;
+    const reader = new FileReader();
+    reader.onload = e => {
+      previewImg.src = e.target.result;
+      previewContainer.style.display = 'block';
+      uploadZone.style.display = 'none';
+      freeResult.style.display = 'none';
+      results.style.display = 'none';
+      errorMsg.style.display = 'none';
+      resultsGrid.innerHTML = '';
+      resultsTips.innerHTML = '';
+      document.querySelector('.hair-section')?.remove();
+      document.querySelector('.improve-section')?.remove();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ─── Step 1: Free analysis ───────────────────────────────────────────────────
+  const loadingMsgs = [
+    'Mapping facial landmarks...','Calculating symmetry ratios...',
+    'Evaluating golden proportions...','Assessing feature harmony...',
+    'Cross-referencing research database...','Generating personalised protocol...'
+  ];
+
+  analyzeBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+    analyzeBtn.disabled = true;
+    errorMsg.style.display = 'none';
+    loading.classList.add('active');
+
+    let idx = 0;
+    const interval = setInterval(() => { loadingText.textContent = loadingMsgs[++idx % loadingMsgs.length]; }, 1400);
+
+    try {
+      const formData = new FormData();
+      formData.append('portrait', selectedFile);
+
+      const res = await fetch('/api/analyse', { method: 'POST', body: formData });
+      clearInterval(interval);
+      loading.classList.remove('active');
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Server error ${res.status}`);
+      }
+
+      const data = await res.json();
+      paymentIntentId = data.paymentIntentId;
+
+      // Show free score
+      scoreDisplay.innerHTML = `${data.overallScore}<span class="score-denom">/100</span>`;
+      freeResult.style.display = 'block';
+      freeResult.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // Load Stripe.js dynamically with the publishable key from server
+      await loadStripe(data.stripePublishableKey, data.clientSecret);
+
+    } catch (err) {
+      clearInterval(interval);
+      loading.classList.remove('active');
+      analyzeBtn.disabled = false;
+      errorMsg.textContent = err.message || 'Analysis failed. Please try again.';
+      errorMsg.style.display = 'block';
+    }
+  });
+
+  // ─── Load Stripe & mount payment element ─────────────────────────────────────
+  async function loadStripe(publishableKey, clientSecret) {
+    if (!window.Stripe) {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://js.stripe.com/v3/';
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+    stripeInstance = window.Stripe(publishableKey);
+    stripeElements = stripeInstance.elements({ clientSecret, appearance: {
+      theme: 'night',
+      variables: {
+        colorPrimary: '#C9A84C', colorBackground: '#141412',
+        colorText: '#F5F0E8', colorDanger: '#cf6679',
+        fontFamily: 'Montserrat, sans-serif', borderRadius: '0px',
+      }
+    }});
+    const paymentEl = stripeElements.create('payment');
+    paymentEl.mount('#payment-element');
+  }
+
+  // ─── Open / close modal ──────────────────────────────────────────────────────
+  payBtn.addEventListener('click', () => { modalOverlay.classList.add('active'); });
+  modalClose.addEventListener('click', () => { modalOverlay.classList.remove('active'); });
+  modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) modalOverlay.classList.remove('active'); });
+
+  // ─── Step 2: Submit payment ───────────────────────────────────────────────────
+  submitBtn.addEventListener('click', async () => {
+    if (!stripeInstance || !stripeElements) return;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Processing...';
+    paymentMessage.style.display = 'none';
+
+    const { error } = await stripeInstance.confirmPayment({
+      elements: stripeElements,
+      confirmParams: { return_url: window.location.href },
+      redirect: 'if_required',
+    });
+
+    if (error) {
+      paymentMessage.textContent = error.message;
+      paymentMessage.style.display = 'block';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Pay €7.99 & Unlock Report';
+      return;
+    }
+
+    // Payment succeeded — fetch full report
+    submitBtn.textContent = 'Unlocking your report...';
+    try {
+      const res = await fetch(`/api/report/${paymentIntentId}`);
+      if (!res.ok) throw new Error('Could not retrieve report.');
+      const report = await res.json();
+
+      modalOverlay.classList.remove('active');
+      freeResult.style.display = 'none';
+      renderFullResults(report);
+    } catch (err) {
+      paymentMessage.textContent = err.message;
+      paymentMessage.style.display = 'block';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Pay €7.99 & Unlock Report';
+    }
+  });
+
+  // ─── Check for Stripe redirect return (3D Secure etc.) ───────────────────────
+  window.addEventListener('load', async () => {
+    const params = new URLSearchParams(window.location.search);
+    const piSecret = params.get('payment_intent_client_secret');
+    const piId = params.get('payment_intent');
+    if (!piSecret || !piId) return;
+
+    // Clean URL
+    window.history.replaceState({}, '', window.location.pathname);
+
+    // Verify and load report
+    try {
+      const res = await fetch(`/api/report/${piId}`);
+      if (!res.ok) throw new Error();
+      const report = await res.json();
+      document.getElementById('analysis').scrollIntoView({ behavior: 'smooth' });
+      renderFullResults(report);
+    } catch {
+      // silently ignore — user can try again
+    }
+  });
+
+  // ─── Render full paid report ──────────────────────────────────────────────────
+  function renderFullResults(a) {
+    const blocks = [
+      { label:'Symmetry', score:a.symmetry?.score, obs:a.symmetry?.observation },
+      { label:'Proportions', score:a.proportions?.score, obs:a.proportions?.observation },
+      { label:'Feature Harmony', score:a.features?.score, obs:a.features?.observation },
+      { label:'Skin Quality', score:a.skinQuality?.score, obs:a.skinQuality?.observation },
+    ];
+
+    resultsGrid.innerHTML = blocks.map((b,i) => `
+      <div class="result-block" style="animation-delay:${i*.1}s">
+        <div class="result-block-label">${b.label} — <span style="color:var(--gold-light);font-family:'Cormorant Garamond',serif;font-size:18px">${b.score ?? '—'}</span></div>
+        <div class="result-block-content">${b.obs ?? ''}</div>
+      </div>`).join('');
+
+    const tipsHtml = (a.tips||[]).map((t,i) =>
+      `<li data-num="0${i+1}" style="animation-delay:${.5+i*.08}s">${t}</li>`).join('');
+
+    resultsTips.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;flex-wrap:wrap;gap:24px">
+        <div>
+          <div class="result-block-label">Overall Aesthetic Score</div>
+          <span style="font-family:'Cormorant Garamond',serif;font-size:56px;color:var(--gold-light);line-height:1">${a.overallScore ?? '—'}<span style="font-size:20px;color:var(--muted)">/100</span></span>
+        </div>
+        <div style="text-align:right;max-width:300px">
+          <div class="result-block-label">Your Strengths</div>
+          <p style="font-size:13px;line-height:1.8;color:rgba(245,240,232,.65);letter-spacing:.02em">${a.strengths ?? ''}</p>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:28px">
+        <div class="result-block-label" style="margin-bottom:4px">Personalised Enhancement Protocol</div>
+        <ul class="tips-list">${tipsHtml}</ul>
+      </div>`;
+
+    // Hairstyle section
+    const hair = a.hairstyles;
+    if (hair) {
+      const recHtml = (hair.recommended||[]).map(h => `
+        <div class="hair-card"><div class="hair-dot good"></div>
+          <div><div class="hair-name">${h.name}</div><div class="hair-why">${h.why}</div></div></div>`).join('');
+      const avoidHtml = (hair.avoid||[]).map(h => `
+        <div class="hair-card avoid-card"><div class="hair-dot bad"></div>
+          <div><div class="hair-name">${h.name}</div><div class="hair-why">${h.why}</div></div></div>`).join('');
+
+      const hairSec = document.createElement('div');
+      hairSec.className = 'hair-section';
+      hairSec.innerHTML = `
+        <div class="result-block" style="opacity:1;animation:none">
+          <div class="result-block-label">Hairstyle Intelligence</div>
+        </div>
+        <div class="hair-face-shape">
+          <div class="face-shape-badge">${hair.faceShape ?? ''} Face</div>
+          <div class="face-shape-explain">${hair.faceShapeExplanation ?? ''}</div>
+        </div>
+        <div class="hair-grid">
+          <div><div class="hair-col-label good">Recommended</div>${recHtml}</div>
+          <div><div class="hair-col-label bad">Avoid</div>${avoidHtml}</div>
+        </div>`;
+      resultsTips.after(hairSec);
+    }
+
+    // Natural improvements
+    const imps = a.naturalImprovements;
+    if (imps?.length) {
+      const impactLabel = { high:'High Impact', medium:'Medium Impact', low:'Low Impact' };
+      const impactClass = { high:'impact-high', medium:'impact-medium', low:'impact-low' };
+      const cardsHtml = imps.map(i => `
+        <div class="improve-card">
+          <div class="improve-top">
+            <div class="improve-category">${i.category}</div>
+            <div class="impact-badge ${impactClass[i.scoreImpact]||'impact-medium'}">${impactLabel[i.scoreImpact]||i.scoreImpact}</div>
+          </div>
+          <div class="improve-title">${i.title}</div>
+          <div class="improve-desc">${i.description}</div>
+        </div>`).join('');
+
+      const impSec = document.createElement('div');
+      impSec.className = 'improve-section';
+      impSec.innerHTML = `
+        <div class="result-block" style="opacity:1;animation:none">
+          <div class="result-block-label">Natural Score Improvements</div>
+          <div class="result-block-content" style="margin-top:4px">Science-backed, surgery-free changes ranked by potential impact on your aesthetic score.</div>
+        </div>
+        <div class="improve-grid">${cardsHtml}</div>`;
+
+      const hairSec = document.querySelector('.hair-section');
+      (hairSec || resultsTips).after(impSec);
+    }
+
+    results.style.display = 'block';
+    analyzeBtn.disabled = false;
+    results.scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+</script>
+</body>
+</html>
